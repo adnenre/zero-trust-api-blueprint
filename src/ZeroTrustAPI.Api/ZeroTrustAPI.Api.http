@@ -1,0 +1,15 @@
+
+@host=http://localhost:5000
+
+# Get OpenAPI specification (built‑in)
+GET {{host}}/openapi/v1.json
+Accept: application/json
+
+###
+
+# Health check endpoint (Zero Trust baseline)
+GET {{host}}/health
+Accept: application/json
+
+###
+e

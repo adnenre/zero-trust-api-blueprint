@@ -1,0 +1,56 @@
+# .NET build outputs
+bin/
+obj/
+out/
+packages/
+*.user
+*.suo
+*.cache
+*.log
+*.nupkg
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.csproj.user
+*.pidb
+*.userprefs
+*.sln.ide
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Docker / container artifacts
+*.dockerignore
+*.containerfile
+
+# Environment & secrets
+*.secrets
+*.pfx
+*.pem
+*.key
+.env
+appsettings.Development.json
+appsettings.Production.json
+
+# Logs
+logs/
+*.log
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# User-specific files
+*.suo
+*.user
+*.sln.docstates

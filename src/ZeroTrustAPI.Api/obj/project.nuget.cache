@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "pSa99xC8cjE=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\adnen\\OneDrive\\Desktop\\2026\\dotnet-projects\\zero-trust-api-blueprint\\src\\ZeroTrustAPI.Api\\ZeroTrustAPI.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\adnen\\.nuget\\packages\\microsoft.aspnetcore.openapi\\11.0.0-preview.2.26159.112\\microsoft.aspnetcore.openapi.11.0.0-preview.2.26159.112.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\microsoft.extensions.apidescription.server\\10.0.0\\microsoft.extensions.apidescription.server.10.0.0.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\microsoft.openapi\\3.3.1\\microsoft.openapi.3.3.1.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore\\10.1.7\\swashbuckle.aspnetcore.10.1.7.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\10.1.7\\swashbuckle.aspnetcore.swagger.10.1.7.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\10.1.7\\swashbuckle.aspnetcore.swaggergen.10.1.7.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore.swaggerui\\10.1.7\\swashbuckle.aspnetcore.swaggerui.10.1.7.nupkg.sha512"
+  ],
+  "logs": []
+}

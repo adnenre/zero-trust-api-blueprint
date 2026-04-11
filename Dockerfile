@@ -1,0 +1,10 @@
+FROM mcr.microsoft.com/dotnet/sdk:11.0-preview AS build
+WORKDIR /app
+COPY . .
+RUN dotnet restore "src/ZeroTrustAPI.Api/ZeroTrustAPI.Api.csproj"
+RUN dotnet publish "src/ZeroTrustAPI.Api/ZeroTrustAPI.Api.csproj" -c Release -o out
+
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-preview
+WORKDIR /app
+COPY --from=build /app/out .
+ENTRYPOINT ["dotnet", "ZeroTrustAPI.Api.dll"]
