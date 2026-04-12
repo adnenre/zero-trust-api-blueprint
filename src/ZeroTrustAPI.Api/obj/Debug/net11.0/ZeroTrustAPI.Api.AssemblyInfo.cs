@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ZeroTrustAPI.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+08fa94a90f9ee592a9df8f167a29db86fdfe991c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee628650da4ad8bca4447862aec1341a0a4c9557")]
 [assembly: System.Reflection.AssemblyProductAttribute("ZeroTrustAPI.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ZeroTrustAPI.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

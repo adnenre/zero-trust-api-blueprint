@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "OpLce9WyZ2M=",
+  "dgSpecHash": "W74dYlqzRTI=",
   "success": true,
   "projectFilePath": "C:\\Users\\adnen\\OneDrive\\Desktop\\2026\\dotnet-projects\\zero-trust-api-blueprint\\src\\ZeroTrustAPI.Api\\ZeroTrustAPI.Api.csproj",
   "expectedPackageFiles": [
@@ -29,6 +29,7 @@
     "C:\\Users\\adnen\\.nuget\\packages\\microsoft.identitymodel.tokens\\7.7.1\\microsoft.identitymodel.tokens.7.7.1.nupkg.sha512",
     "C:\\Users\\adnen\\.nuget\\packages\\microsoft.openapi\\3.3.1\\microsoft.openapi.3.3.1.nupkg.sha512",
     "C:\\Users\\adnen\\.nuget\\packages\\microsoft.sqlserver.server\\1.0.0\\microsoft.sqlserver.server.1.0.0.nupkg.sha512",
+    "C:\\Users\\adnen\\.nuget\\packages\\minver\\7.0.0\\minver.7.0.0.nupkg.sha512",
     "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore\\10.1.7\\swashbuckle.aspnetcore.10.1.7.nupkg.sha512",
     "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\10.1.7\\swashbuckle.aspnetcore.swagger.10.1.7.nupkg.sha512",
     "C:\\Users\\adnen\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\10.1.7\\swashbuckle.aspnetcore.swaggergen.10.1.7.nupkg.sha512",
