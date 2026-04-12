@@ -29,7 +29,7 @@ else
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
-
+builder.Services.AddScoped<IHealthService, HealthService>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

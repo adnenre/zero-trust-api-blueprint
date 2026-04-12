@@ -132,6 +132,9 @@ jobs:
           push: false
           tags: zero-trust-api:ci
           load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          no-cache: true
       - name: Run container and test health endpoint
         run: |
           docker run -d -p 5000:8080 --name zero-trust-api zero-trust-api:ci
