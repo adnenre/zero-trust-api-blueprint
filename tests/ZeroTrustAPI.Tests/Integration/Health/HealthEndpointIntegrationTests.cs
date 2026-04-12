@@ -4,30 +4,28 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using ZeroTrustAPI.Api;
 using Xunit;
 
-namespace ZeroTrustAPI.Tests.Health;
+namespace ZeroTrustAPI.Tests.Integration.Health;
 
-// Define a record matching the HealthController response
 public record HealthResponse(string status, DateTime timestamp);
 
-public class HealthControllerTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly HttpClient _client;
 
-    public HealthControllerTests(WebApplicationFactory<Program> factory)
+    public HealthEndpointIntegrationTests(WebApplicationFactory<Program> factory)
     {
-        _client = factory.CreateClient();
+        // Set environment to "Testing" to avoid running migrations (only in Development)
+        _client = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("ASPNETCORE_ENVIRONMENT", "Testing");
+        }).CreateClient();
     }
 
     [Fact]
     public async Task Health_Endpoint_Returns_Ok_With_Status_Healthy()
     {
-        // Act
         var response = await _client.GetAsync("/health");
-
-        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-        // Deserialize into the HealthResponse record
         var result = await response.Content.ReadFromJsonAsync<HealthResponse>();
         Assert.NotNull(result);
         Assert.Equal("healthy", result?.status);

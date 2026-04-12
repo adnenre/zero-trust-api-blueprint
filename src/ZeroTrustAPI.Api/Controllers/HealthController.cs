@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using ZeroTrustAPI.Api.Services.Interfaces;
 
 namespace ZeroTrustAPI.Api.Controllers;
 
@@ -6,9 +7,17 @@ namespace ZeroTrustAPI.Api.Controllers;
 [Route("[controller]")]
 public class HealthController : ControllerBase
 {
-    [HttpGet]
-    public IActionResult Get()
+    private readonly IHealthService _healthService;
+
+    public HealthController(IHealthService healthService)
     {
-        return Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+        _healthService = healthService;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        var status = await _healthService.GetHealthAsync();
+        return Ok(status);
     }
 }

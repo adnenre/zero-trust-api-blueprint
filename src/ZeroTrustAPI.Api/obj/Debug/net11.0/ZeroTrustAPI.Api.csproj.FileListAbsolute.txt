@@ -35,3 +35,4 @@ C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\sr
 C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\src\ZeroTrustAPI.Api\obj\Debug\net11.0\ZeroTrustAPI.Api.pdb
 C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\src\ZeroTrustAPI.Api\obj\Debug\net11.0\ZeroTrustAPI.Api.genruntimeconfig.cache
 C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\src\ZeroTrustAPI.Api\obj\Debug\net11.0\ref\ZeroTrustAPI.Api.dll
+C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\src\ZeroTrustAPI.Api\obj\Debug\net11.0\ZeroTrustAPI.Api.sourcelink.json

@@ -423,3 +423,6 @@ C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\te
 C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\tests\ZeroTrustAPI.Tests\bin\Debug\net11.0\Microsoft.AspNetCore.Mvc.Testing.dll
 C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\tests\ZeroTrustAPI.Tests\bin\Debug\net11.0\Microsoft.AspNetCore.TestHost.dll
 C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\tests\ZeroTrustAPI.Tests\bin\Debug\net11.0\Microsoft.Extensions.DependencyModel.dll
+C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\tests\ZeroTrustAPI.Tests\obj\Debug\net11.0\ZeroTrustAPI.Tests.sourcelink.json
+C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\tests\ZeroTrustAPI.Tests\bin\Debug\net11.0\Castle.Core.dll
+C:\Users\adnen\OneDrive\Desktop\2026\dotnet-projects\zero-trust-api-blueprint\tests\ZeroTrustAPI.Tests\bin\Debug\net11.0\Moq.dll
