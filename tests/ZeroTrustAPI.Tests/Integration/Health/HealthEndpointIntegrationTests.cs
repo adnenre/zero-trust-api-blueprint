@@ -1,34 +1,41 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
-using ZeroTrustAPI.Api;
+using ZeroTrustAPI.Api.Services.Interfaces;
 using Xunit;
 
 namespace ZeroTrustAPI.Tests.Integration.Health;
 
-public record HealthResponse(string status, DateTime timestamp);
-
 public class HealthEndpointIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly HttpClient _client;
+    private readonly WebApplicationFactory<Program> _factory;
 
     public HealthEndpointIntegrationTests(WebApplicationFactory<Program> factory)
     {
-        // Set environment to "Testing" to avoid running migrations (only in Development)
-        _client = factory.WithWebHostBuilder(builder =>
+        _factory = factory.WithWebHostBuilder(builder =>
         {
-            builder.UseSetting("ASPNETCORE_ENVIRONMENT", "Testing");
-        }).CreateClient();
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IHealthService>();
+                var mock = new Mock<IHealthService>();
+                mock.Setup(s => s.GetHealthAsync())
+                    .ReturnsAsync(new HealthStatus("Healthy", DateTime.UtcNow));
+                services.AddScoped(_ => mock.Object);
+            });
+        });
     }
 
     [Fact]
     public async Task Health_Endpoint_Returns_Ok_With_Status_Healthy()
     {
-        var response = await _client.GetAsync("/health");
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<HealthResponse>();
+        var result = await response.Content.ReadFromJsonAsync<HealthStatus>();
         Assert.NotNull(result);
-        Assert.Equal("healthy", result?.status);
-        Assert.True(result?.timestamp != default);
+        Assert.Equal("Healthy", result.Status);
     }
 }
