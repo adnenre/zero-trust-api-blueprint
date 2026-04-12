@@ -1,8 +1,12 @@
 # Zero Trust API Blueprint
 
-**Enterprise Zero Trust API implementation** – .NET 11 preview, controllers only, Docker Compose, TDD-ready.
+[![.NET](https://github.com/your-username/zero-trust-api-blueprint/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/your-username/zero-trust-api-blueprint/actions/workflows/ci-cd.yml)
+[![Coverage](https://img.shields.io/badge/coverage-≥85%25-brightgreen)](https://github.com/your-username/zero-trust-api-blueprint)
+[![License](https://img.shields.io/badge/license-Proprietary-red)](LICENSE)
 
-This repository contains the reference implementation of the [Enterprise Zero Trust API Blueprint – Complete Edition (29 sections)](docs/blueprint.md). It follows **Zero Trust principles**: no implicit trust, continuous verification, least privilege, and defense in depth.
+**Enterprise Zero Trust API implementation** – .NET 11 preview, layered architecture (Controllers → Services → Repositories → Mappers), TDD with >85% coverage, Docker Compose.
+
+This repository follows **Zero Trust principles**: no implicit trust, continuous verification, least privilege, and defense in depth.
 
 ---
 
@@ -11,22 +15,22 @@ This repository contains the reference implementation of the [Enterprise Zero Tr
 ### Prerequisites
 
 - [.NET 11 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/11.0) (preview)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (optional, for containerized run)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (optional)
 - Git
 
 ### Run with Docker (recommended)
 
-```shell
+```bash
 git clone https://github.com/yourusername/zero-trust-api-blueprint.git
 cd zero-trust-api-blueprint
 docker-compose up --build
 ```
 
-The API will be available at `http://localhost:5000`
+API available at `http://localhost:5000`
 
 Test the health endpoint:
 
-```shell
+```bash
 curl http://localhost:5000/health
 ```
 
@@ -38,52 +42,79 @@ Expected response:
 
 ### Run locally with .NET CLI
 
-```shell
+```bash
 dotnet restore
 dotnet run --project src/ZeroTrustAPI.Api/ZeroTrustAPI.Api.csproj
 ```
 
-Then open `http://localhost:5xxx/health` (port shown in console).
-
 ---
 
-## 📚 Documentation
+## 📡 API Endpoints
 
-- [Full Zero Trust API Blueprint (29 sections)](docs/blueprint.md) – technical, operational, and governance controls.
-- [Development Guide](guide.md) – incremental steps, TDD practices, and project setup.
+| Method | Endpoint          | Description         | Request Body                                     | Response                                                    |
+| ------ | ----------------- | ------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| POST   | `/api/auth/login` | Authenticate a user | `{ "username": "string", "password": "string" }` | `200 OK` with `AuthResult` or `401 Unauthorized`            |
+| GET    | `/health`         | Health check        | –                                                | `200 OK` with `{ "status": "healthy", "timestamp": "..." }` |
 
----
+**Example login request:**
 
-## 📡 OpenAPI Specification
-
-This project uses **built-in OpenAPI** (Microsoft.AspNetCore.OpenApi). No Swashbuckle or Swagger UI is included by default.
-
-- OpenAPI JSON document: `http://localhost:5000/openapi/v1.json`
-- To explore the API, you can:
-  - Use [Swagger UI](https://swagger.io/tools/swagger-ui/) locally by pointing it to the `/openapi/v1.json` URL.
-  - Use Visual Studio's built-in HTTP file or `.http` requests.
-  - Use tools like Postman or Insomnia with the OpenAPI import.
-
-To add a Swagger UI, install `Swashbuckle.AspNetCore` and add `app.UseSwagger(); app.UseSwaggerUI();` in `Program.cs`. However, for a minimal Zero Trust baseline, we keep the default lightweight OpenAPI.
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "john", "password": "secret"}'
+```
 
 ---
 
 ## 🧪 Testing
 
-Run all tests (unit + integration):
+Run all tests (unit + integration) with coverage:
 
-```shell
+```bash
+./run-coverage.sh
+```
+
+This will:
+
+- Execute all tests (xUnit)
+- Generate an HTML coverage report in `ZeroTrustAPI.Tests/CoverageReport/index.html`
+- Enforce minimum 85% line coverage (excluding generated code)
+
+Run tests without coverage:
+
+```bash
+cd tests/ZeroTrustAPI.Tests
 dotnet test
 ```
 
-Tests are written using **xUnit** and follow **TDD** (red-green-refactor). Each user story includes Gherkin scenarios that are turned into automated tests before implementation.
+All tests follow the **AAA (Arrange‑Act‑Assert)** pattern. Unit tests use mocks (Moq); integration tests use `WebApplicationFactory` with an in‑memory database.
 
 ---
 
-## 🐳 Docker Compose Details
+## 🏗️ Architecture
 
-The `docker-compose.yml` launches the API on port `5000` (host) → `8080` (container).  
-To change the port, edit the `ports` mapping.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed layer descriptions (Controllers → Services → Repositories → Mappers), dependency injection, and the TDD workflow.
+
+**Layered structure:**
+
+```bash
+Controllers → Services → Repositories → Mappers → Entities/DTOs
+```
+
+- **Controllers** – handle HTTP, delegate to service interfaces.
+- **Services** – business logic, orchestrate repositories.
+- **Repositories** – abstract data access (EF Core with conditional InMemory for tests).
+- **Mappers** – convert between entities and DTOs.
+- **DTOs** – API contracts (request/response).
+- **Entities** – database models.
+
+All dependencies are injected via constructors (no `new` inside classes). Environment variable `TESTING=true` switches to InMemory database for integration tests.
+
+---
+
+## 🐳 Docker Compose
+
+`docker-compose.yml` launches the API on port `5000` (host) → `8080` (container).
 
 ```yaml
 services:
@@ -99,20 +130,29 @@ services:
 
 ## 📁 Project Structure
 
-```text
+```bash
 zero-trust-api-blueprint/
 ├── src/
-│   └── ZeroTrustAPI.Api/          # Main API project (controllers only)
-│       ├── Controllers/            # HealthController, AuthController, etc.
-│       ├── Program.cs              # Entry point (built‑in OpenAPI)
-│       └── ZeroTrustAPI.Api.csproj
+│   └── ZeroTrustAPI.Api/
+│       ├── Controllers/
+│       ├── Services/
+│       ├── Repositories/
+│       ├── Mappers/
+│       ├── DTOs/
+│       ├── Entities/
+│       ├── Data/
+│       ├── Security/
+│       └── Program.cs
 ├── tests/
-│   └── ZeroTrustAPI.Tests/         # xUnit test project (TDD)
+│   └── ZeroTrustAPI.Tests/
+│       ├── Unit/
+│       └── Integration/
 ├── docs/
-│   └── blueprint.md                # 29‑section Zero Trust blueprint
-├── Dockerfile                      # Multi‑stage build for .NET 11 preview
+│   └── blueprint.md
+├── Dockerfile
 ├── docker-compose.yml
-├── guide.md                        # Incremental development guide
+├── coverlet.runsettings
+├── run-coverage.sh
 └── README.md
 ```
 
@@ -120,21 +160,14 @@ zero-trust-api-blueprint/
 
 ## 🛣️ Roadmap
 
-The implementation follows the blueprint's priority matrix:
-
-- **Critical (MVP):** Identity, MFA, JWT, fine‑grained authorization, logging, secrets, data protection, IAM governance, SLOs.
-- **High:** API gateway, context‑aware security, microservices security, rate limiting, testing, CI/CD, incident response, policy as code, data classification.
-- **Medium:** Request validation, compliance, observability, supply chain security, threat intelligence, UEBA, documentation.
-- **Low:** External penetration testing, cost/business alignment.
-
-Current status: ✅ **Initialization complete** – `/health` endpoint working with controllers + Docker.  
+Current status: ✅ **Login endpoint implemented** with layered architecture, DI, repository, mapper, and full test coverage (>85%).  
 Next: **Story 1.1 – MFA Enforcement (JWT + TOTP)**.
 
 ---
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for TDD requirements, signed commits, two‑person review, and security policies.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for TDD requirements, AAA pattern, signed commits, two‑person review, and security policies.
 
 ---
 
@@ -142,6 +175,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for TDD requirements, signed commits, two
 
 Proprietary – internal enterprise use.
 
----
-
-**Built with .NET 11 preview, Docker, and Zero Trust principles.**
+**Built with .NET 11 preview, layered architecture, and Zero Trust principles.**
