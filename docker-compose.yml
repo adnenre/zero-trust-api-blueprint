@@ -1,7 +1,34 @@
 services:
+  postgres:
+    image: postgres:latest
+    container_name: zero-trust-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zero_trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql   # changed path
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zero-trust-api
     ports:
       - "5000:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=zero_trust;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
