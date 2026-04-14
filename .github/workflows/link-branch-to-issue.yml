@@ -1,0 +1,46 @@
+name: Link Branch to Issue
+
+on:
+  issues:
+    types: [assigned] # Trigger when someone is assigned to an issue
+
+jobs:
+  create-and-link-branch:
+    runs-on: ubuntu-latest
+    # Only run if the issue is actually assigned (not unassigned)
+    if: github.event.issue.assignee != null
+    permissions:
+      contents: write # To create and push a new branch
+      issues: write # To link the branch to the issue via API
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Get full history so we can create a branch from main
+
+      - name: Generate branch name from issue number and title
+        id: vars
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          TITLE="${{ github.event.issue.title }}"
+          # Convert title to lowercase, replace non-alphanumeric with hyphens
+          SAFE_TITLE=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
+          BRANCH_NAME="story/${ISSUE_NUMBER}-${SAFE_TITLE}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "issue_number=${ISSUE_NUMBER}" >> $GITHUB_OUTPUT
+
+      - name: Create branch from main
+        run: |
+          git checkout main
+          git pull origin main
+          git checkout -b ${{ steps.vars.outputs.branch_name }}
+          git push origin ${{ steps.vars.outputs.branch_name }}
+
+      - name: Link branch to issue using GitHub API
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.vars.outputs.issue_number }}/branches \
+            -d "{\"branch\":\"${{ steps.vars.outputs.branch_name }}\"}"
