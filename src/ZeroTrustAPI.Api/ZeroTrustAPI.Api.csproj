@@ -5,35 +5,34 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
   <!-- MinVer configuration -->
   <PropertyGroup>
     <MinVerDefaultPreRelease>preview</MinVerDefaultPreRelease>
     <MinVerTagPrefix>v</MinVerTagPrefix>
     <MinVerVerbosity>normal</MinVerVerbosity>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
-  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="11.0.0-preview.2.26159.112" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5" />
-    <PackageReference Include="MinVer" Version="7.0.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0-preview.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design"
       Version="11.0.0-preview.2.26159.112">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="11.0.0-preview.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory"
+      Version="11.0.0-preview.2.26159.112" /> <!-- optional for testing -->
+    <PackageReference Include="MinVer" Version="7.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0-preview.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
   </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroTrustAPI.Tests" />
   </ItemGroup>
+
 </Project>
