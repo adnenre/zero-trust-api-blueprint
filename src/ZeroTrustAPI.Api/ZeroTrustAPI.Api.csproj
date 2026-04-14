@@ -25,6 +25,13 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="11.0.0-preview.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design"
+      Version="11.0.0-preview.2.26159.112">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="AspNetCore.HealthChecks.Npgsql" Version="11.0.0-preview.2" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroTrustAPI.Tests" />

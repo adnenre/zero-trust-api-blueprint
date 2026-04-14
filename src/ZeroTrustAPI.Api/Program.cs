@@ -5,32 +5,46 @@ using ZeroTrustAPI.Api.Services.Implementations;
 using ZeroTrustAPI.Api.Repositories.Interfaces;
 using ZeroTrustAPI.Api.Repositories.Implementations;
 using ZeroTrustAPI.Api.Security;
+using ZeroTrustAPI.Api.Health;
+using HealthStatus = Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus;
+using Microsoft.Extensions.DependencyInjection;   // for AddDbContext, AddScoped, etc.
+using Npgsql.EntityFrameworkCore.PostgreSQL;      // for UseNpgsql extension
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHealthChecks();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-// Conditionally register database provider
 if (Environment.GetEnvironmentVariable("TESTING") == "true")
 {
-    // Use InMemory database for integration tests
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseInMemoryDatabase("TestDatabase"));
 }
 else
 {
-    // Use real SQL Server in normal environments
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
+
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgresHealthCheck>("postgres", failureStatus: HealthStatus.Unhealthy);
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IHealthService, HealthService>();
+
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    if (Environment.GetEnvironmentVariable("TESTING") != "true")
+    {
+        dbContext.Database.Migrate();
+    }
+}
 
 if (app.Environment.IsDevelopment())
     app.MapOpenApi();
@@ -38,5 +52,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run();
