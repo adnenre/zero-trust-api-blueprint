@@ -1,46 +1,218 @@
-name: Link Branch to Issue
+name: CI/CD
 
 on:
-  issues:
-    types: [assigned] # Trigger when someone is assigned to an issue
+  push:
+    branches: [main, develop]
+    tags: ["v*"] # version tags trigger full release
+  pull_request:
+    branches: [main] # PRs also run CI
+
+permissions:
+  contents: read
+  security-events: write
+  packages: write
+
+env:
+  DOTNET_VERSION: "11.0.100-preview.2.26159.112" # or use stable 8.0.x
+  PROJECT_PATH: "src/ZeroTrustAPI.Api/ZeroTrustAPI.Api.csproj"
+  TEST_PATH: "tests/ZeroTrustAPI.Tests/ZeroTrustAPI.Tests.csproj"
+  MIN_COVERAGE: 85
 
 jobs:
-  create-and-link-branch:
+  # ------------------------------------------------------------
+  # 1. Version extraction (from Git tags)
+  # ------------------------------------------------------------
+  version:
     runs-on: ubuntu-latest
-    # Only run if the issue is actually assigned (not unassigned)
-    if: github.event.issue.assignee != null
-    permissions:
-      contents: write # To create and push a new branch
-      issues: write # To link the branch to the issue via API
-
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Get full history so we can create a branch from main
-
-      - name: Generate branch name from issue number and title
-        id: vars
+          fetch-depth: 0 # needed for MinVer to see tags
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+      - name: Get version from MinVer
+        id: get_version
         run: |
-          ISSUE_NUMBER=${{ github.event.issue.number }}
-          TITLE="${{ github.event.issue.title }}"
-          # Convert title to lowercase, replace non-alphanumeric with hyphens
-          SAFE_TITLE=$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
-          BRANCH_NAME="story/${ISSUE_NUMBER}-${SAFE_TITLE}"
-          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
-          echo "issue_number=${ISSUE_NUMBER}" >> $GITHUB_OUTPUT
+          VERSION=$(dotnet msbuild ${{ env.PROJECT_PATH }} /t:GetVersion /p:MinVerForceVersion=0.0.0 /nologo /v:quiet | grep -oP '\d+\.\d+\.\d+.*' || echo "0.0.0")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
 
-      - name: Create branch from main
-        run: |
-          git checkout main
-          git pull origin main
-          git checkout -b ${{ steps.vars.outputs.branch_name }}
-          git push origin ${{ steps.vars.outputs.branch_name }}
+  # ------------------------------------------------------------
+  # 2. Restore dependencies (cached)
+  # ------------------------------------------------------------
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        run: dotnet restore
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-      - name: Link branch to issue using GitHub API
+  # ------------------------------------------------------------
+  # 3. Build
+  # ------------------------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    needs: restore
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+  # ------------------------------------------------------------
+  # 4. Test with coverage (enforce 85%)
+  # ------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restore
+        run: dotnet restore
+      - name: Run tests with coverage
         run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/${{ github.repository }}/issues/${{ steps.vars.outputs.issue_number }}/branches \
-            -d "{\"branch\":\"${{ steps.vars.outputs.branch_name }}\"}"
+          dotnet test ${{ env.TEST_PATH }} \
+            --no-restore \
+            --verbosity normal \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults
+      - name: Install coverage tools
+        run: dotnet tool install -g dotnet-coverage
+      - name: Merge coverage reports
+        run: dotnet-coverage merge ./TestResults/**/coverage.cobertura.xml --output ./coverage.xml
+      - name: Install report generator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      - name: Generate coverage report
+        run: reportgenerator -reports:./coverage.xml -targetdir:./coveragereport -reporttypes:Html -assemblyfilters:-xunit*
+      - name: Check coverage threshold
+        run: |
+          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' ./coveragereport/Summary.xml | head -1)
+          COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc | cut -d. -f1)
+          echo "Code coverage: $COVERAGE_PERCENT%"
+          if [ "$COVERAGE_PERCENT" -lt "${{ env.MIN_COVERAGE }}" ]; then
+            echo "❌ Coverage $COVERAGE_PERCENT% is below required ${{ env.MIN_COVERAGE }}%"
+            exit 1
+          else
+            echo "✅ Coverage $COVERAGE_PERCENT% meets threshold ${{ env.MIN_COVERAGE }}%"
+          fi
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coveragereport
+
+  # ------------------------------------------------------------
+  # 5. Security scan (CodeQL)
+  # ------------------------------------------------------------
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: restore
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build for CodeQL
+        run: dotnet build --no-restore -c Release
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:csharp"
+
+  # ------------------------------------------------------------
+  # 6. Docker build (validation only – no push)
+  #    Runs only on main/develop (not on tags) to test Dockerfile
+  # ------------------------------------------------------------
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [test, version]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: zero-trust-api:ci
+          load: true
+          no-cache: true
+      - name: Run container and test health endpoint
+        run: |
+          docker run -d -p 5000:8080 --name zero-trust-api zero-trust-api:ci
+          sleep 5
+          curl --fail http://localhost:5000/health || (docker logs zero-trust-api && exit 1)
+          docker stop zero-trust-api
+          docker rm zero-trust-api
+
+  # ------------------------------------------------------------
+  # 7. Push Docker image to GitHub Container Registry
+  #    Only on version tags (v*)
+  # ------------------------------------------------------------
+  push-to-registry:
+    runs-on: ubuntu-latest
+    needs: [docker-build, version]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ needs.version.outputs.version }}
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          no-cache: true
