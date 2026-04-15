@@ -1,0 +1,116 @@
+### Variables
+@host = http://localhost:5000
+@contentType = application/json
+
+### Health Check
+GET {{host}}/health
+
+### 1. Register a new user
+# Response includes success flag and userId (optional)
+POST {{host}}/api/auth/register
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "Test123!",
+  "confirmPassword": "Test123!"
+}
+
+### 2. Login – obtain access and refresh tokens
+# Save the access token as @token and refresh token as @refreshToken for later requests
+POST {{host}}/api/auth/login
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "password": "Test123!"
+}
+> {%
+    client.global.set("token", response.body.accessToken);
+    client.global.set("refreshToken", response.body.refreshToken);
+    client.global.set("userId", response.body.userId);
+%}
+
+### 3. Refresh token – get a new access token
+POST {{host}}/api/auth/refresh
+Content-Type: {{contentType}}
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 4. Logout – revoke the current refresh token
+POST {{host}}/api/auth/logout
+Authorization: Bearer {{token}}
+
+### ============ Users ============
+
+### Get all users (requires authentication)
+GET {{host}}/api/users
+Authorization: Bearer {{token}}
+
+### Get current user profile
+GET {{host}}/api/users/me
+Authorization: Bearer {{token}}
+
+### Get user by ID
+GET {{host}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### Update user (only provide fields to change)
+PUT {{host}}/api/users/{{userId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{token}}
+
+{
+  "email": "updated@example.com",
+  "username": "newusername"
+}
+
+### Delete user (admin only in some implementations)
+DELETE {{host}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+
+### ============ API Keys ============
+
+### Create an API key
+# Response: { "key": "base64-string" }
+POST {{host}}/api/apikeys
+Authorization: Bearer {{token}}
+
+### List user's API keys
+# Response: array of ApiKeyDto objects
+GET {{host}}/api/apikeys
+Authorization: Bearer {{token}}
+
+### ============ Sessions ============
+
+### List active sessions
+GET {{host}}/api/sessions
+Authorization: Bearer {{token}}
+
+### Revoke a session (replace {{sessionId}} with actual GUID)
+DELETE {{host}}/api/sessions/{{sessionId}}
+Authorization: Bearer {{token}}
+
+### ============ Audit Logs (Admin Only) ============
+
+### Get audit logs with pagination
+# Query parameters: page (default 1), pageSize (default 50)
+GET {{host}}/api/auditlogs?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### ============ File Upload ============
+
+### Upload a file (multipart/form-data)
+POST {{host}}/api/files/upload
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+Sample file content.
+------WebKitFormBoundary--

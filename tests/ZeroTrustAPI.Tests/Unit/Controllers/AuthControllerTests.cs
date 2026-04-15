@@ -4,6 +4,8 @@ using ZeroTrustAPI.Api.Controllers;
 using ZeroTrustAPI.Api.Services.Interfaces;
 using ZeroTrustAPI.Api.DTOs;
 using Xunit;
+using System.Threading.Tasks;
+using System;
 
 namespace ZeroTrustAPI.Tests.Unit.Controllers;
 
@@ -14,20 +16,30 @@ public class AuthControllerTests
     {
         // Arrange
         var mockService = new Mock<IAuthService>();
-        var expectedResult = new AuthResult(true, new UserDto(1, "testuser"), "OK");
-        mockService.Setup(s => s.AuthenticateAsync("testuser", "password123"))
+        var expectedResult = new AuthResult
+        {
+            Success = true,
+            AccessToken = "access_token",
+            RefreshToken = "refresh_token",
+            UserId = Guid.NewGuid()
+        };
+        var loginRequest = new LoginRequest
+        {
+            Username = "testuser",
+            Password = "password123"
+        };
+        mockService.Setup(s => s.LoginAsync(loginRequest))
                    .ReturnsAsync(expectedResult);
         var controller = new AuthController(mockService.Object);
-        var request = new LoginRequest("testuser", "password123");
 
         // Act
-        var result = await controller.Login(request);
+        var result = await controller.Login(loginRequest);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedResult = Assert.IsType<AuthResult>(okResult.Value);
         Assert.True(returnedResult.Success);
-        mockService.Verify(s => s.AuthenticateAsync("testuser", "password123"), Times.Once);
+        mockService.Verify(s => s.LoginAsync(loginRequest), Times.Once);
     }
 
     [Fact]
@@ -35,16 +47,28 @@ public class AuthControllerTests
     {
         // Arrange
         var mockService = new Mock<IAuthService>();
-        mockService.Setup(s => s.AuthenticateAsync("wrong", "wrong"))
-                   .ReturnsAsync(new AuthResult(false, null, "Invalid"));
+        var loginRequest = new LoginRequest
+        {
+            Username = "wrong",
+            Password = "wrong"
+        };
+        var expectedResult = new AuthResult
+        {
+            Success = false,
+            Errors = new[] { "Invalid username or password." }
+        };
+        mockService.Setup(s => s.LoginAsync(loginRequest))
+                   .ReturnsAsync(expectedResult);
         var controller = new AuthController(mockService.Object);
-        var request = new LoginRequest("wrong", "wrong");
 
         // Act
-        var result = await controller.Login(request);
+        var result = await controller.Login(loginRequest);
 
         // Assert
-        Assert.IsType<UnauthorizedObjectResult>(result);
-        mockService.Verify(s => s.AuthenticateAsync("wrong", "wrong"), Times.Once);
+        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+        // The controller may return the Errors array directly (string[]) instead of AuthResult
+        var errors = Assert.IsType<string[]>(unauthorizedResult.Value);
+        Assert.Contains("Invalid username or password.", errors);
+        mockService.Verify(s => s.LoginAsync(loginRequest), Times.Once);
     }
 }
