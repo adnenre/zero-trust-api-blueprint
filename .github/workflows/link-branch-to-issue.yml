@@ -3,9 +3,9 @@ name: CI/CD
 on:
   push:
     branches: [main, develop]
-    tags: ["v*"] # version tags trigger full release
+    tags: ["v*"]
   pull_request:
-    branches: [main] # PRs also run CI
+    branches: [main]
 
 permissions:
   contents: read
@@ -13,15 +13,12 @@ permissions:
   packages: write
 
 env:
-  DOTNET_VERSION: "11.0.100-preview.2.26159.112" # or use stable 8.0.x
+  DOTNET_VERSION: "10.0.100"
   PROJECT_PATH: "src/ZeroTrustAPI.Api/ZeroTrustAPI.Api.csproj"
   TEST_PATH: "tests/ZeroTrustAPI.Tests/ZeroTrustAPI.Tests.csproj"
   MIN_COVERAGE: 85
 
 jobs:
-  # ------------------------------------------------------------
-  # 1. Version extraction (from Git tags)
-  # ------------------------------------------------------------
   version:
     runs-on: ubuntu-latest
     outputs:
@@ -29,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # needed for MinVer to see tags
+          fetch-depth: 0
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -43,20 +40,18 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-  # ------------------------------------------------------------
-  # 2. Restore dependencies (cached)
-  # ------------------------------------------------------------
   restore:
     runs-on: ubuntu-latest
+    needs: version
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore
-      - name: Cache NuGet packages
+      - name: Cache .NET packages
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
@@ -64,9 +59,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
-  # ------------------------------------------------------------
-  # 3. Build
-  # ------------------------------------------------------------
   build:
     runs-on: ubuntu-latest
     needs: restore
@@ -81,9 +73,6 @@ jobs:
       - name: Build
         run: dotnet build --no-restore -c Release
 
-  # ------------------------------------------------------------
-  # 4. Test with coverage (enforce 85%)
-  # ------------------------------------------------------------
   test:
     runs-on: ubuntu-latest
     needs: build
@@ -127,9 +116,6 @@ jobs:
           name: coverage-report
           path: ./coveragereport
 
-  # ------------------------------------------------------------
-  # 5. Security scan (CodeQL)
-  # ------------------------------------------------------------
   security-scan:
     runs-on: ubuntu-latest
     needs: restore
@@ -154,14 +140,24 @@ jobs:
         with:
           category: "/language:csharp"
 
-  # ------------------------------------------------------------
-  # 6. Docker build (validation only – no push)
-  #    Runs only on main/develop (not on tags) to test Dockerfile
-  # ------------------------------------------------------------
   docker-build:
     runs-on: ubuntu-latest
     needs: [test, version]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
@@ -178,16 +174,20 @@ jobs:
           no-cache: true
       - name: Run container and test health endpoint
         run: |
-          docker run -d -p 5000:8080 --name zero-trust-api zero-trust-api:ci
-          sleep 5
+          docker run -d \
+            --name zero-trust-api \
+            --network host \
+            -e ASPNETCORE_URLS="http://0.0.0.0:5000" \
+            -e ConnectionStrings__DefaultConnection="Host=localhost;Database=${{ secrets.POSTGRES_DB }};Username=${{ secrets.POSTGRES_USER }};Password=${{ secrets.POSTGRES_PASSWORD }};GSSEncryptionMode=Disable" \
+            -e Jwt__Key="${{ secrets.JWT_KEY }}" \
+            -e Jwt__Issuer="ZeroTrustAPI" \
+            -e Jwt__Audience="ZeroTrustAPIUsers" \
+            zero-trust-api:ci
+          sleep 10
           curl --fail http://localhost:5000/health || (docker logs zero-trust-api && exit 1)
           docker stop zero-trust-api
           docker rm zero-trust-api
 
-  # ------------------------------------------------------------
-  # 7. Push Docker image to GitHub Container Registry
-  #    Only on version tags (v*)
-  # ------------------------------------------------------------
   push-to-registry:
     runs-on: ubuntu-latest
     needs: [docker-build, version]
