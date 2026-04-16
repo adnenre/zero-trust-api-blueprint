@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Le token par défaut (GITHUB_TOKEN) suffit pour la lecture
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate changelog with git-cliff
@@ -25,9 +26,14 @@ jobs:
           args: --latest --strip all --output CHANGELOG.md
 
       - name: Commit and push changelog
+        env:
+          # Utilisez un Personal Access Token (PAT) avec droits d'écriture sur la branche main
+          # Créez le secret PAT_TOKEN dans Settings → Secrets and variables → Actions
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.github.com"
           git add CHANGELOG.md
           git commit -m "docs(changelog): update for ${{ github.ref_name }}" -m "[skip ci]" || echo "No changes to commit"
-          git push
+          # Pousse avec le PAT pour contourner les restrictions de branche protégée
+          git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
