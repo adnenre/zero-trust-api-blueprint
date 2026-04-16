@@ -2,7 +2,8 @@ name: Generate Changelog
 
 on:
   push:
-    tags: ["v*"]
+    tags:
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -11,24 +12,53 @@ permissions:
 jobs:
   changelog:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate changelog with git-cliff
+      - name: Fetch all tags
+        run: git fetch --tags --force
+
+      # 🔍 DEBUG: ensure correct file is used
+      - name: Debug cliff.toml content
+        run: |
+          echo "========== CLIFF.TOML =========="
+          cat cliff.toml || echo "cliff.toml NOT FOUND"
+          echo "================================"
+
+      # 🔍 DEBUG: check git history
+      - name: Debug git state
+        run: |
+          echo "---- COMMITS ----"
+          git log --oneline -n 5
+          echo "---- TAGS ----"
+          git tag
+
+      - name: Generate changelog
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
-          args: --latest --strip all --output CHANGELOG.md --tag ${{ github.ref_name }}
+          args: --latest --tag ${{ github.ref_name }} --output NEW_CHANGELOG.md
 
-      - name: Commit and push changelog
+      - name: Ensure CHANGELOG.md exists
+        run: touch CHANGELOG.md
+
+      - name: Prepend changelog
+        run: |
+          cat NEW_CHANGELOG.md CHANGELOG.md > TEMP.md
+          mv TEMP.md CHANGELOG.md
+
+      - name: Commit and push
         env:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.github.com"
+
           git add CHANGELOG.md
-          git commit -m "docs(changelog): update for ${{ github.ref_name }}" -m "[skip ci]" || echo "No changes to commit"
+          git commit -m "docs(changelog): update for ${{ github.ref_name }}" -m "[skip ci]" || echo "No changes"
+
           git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git HEAD:main

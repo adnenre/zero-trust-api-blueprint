@@ -1,29 +1,53 @@
 [changelog]
-header = "# Changelog\n"
+header = """
+# Changelog
+"""
+
 body = """
 {% for group, commits in commits | group_by(attribute="group") %}
-### {{ group | upper_first }}
+## {{ group }}
+
 {% for commit in commits %}
-- {{ commit.message | upper_first }}
-{%- endfor %}
+- {{ commit.message }} ({{ commit.id | truncate(length=7, end="") }})
+{% endfor %}
+
 {% endfor %}
 """
+
 trim = true
-footer = ""
 
 [git]
 conventional_commits = true
-filter_unconventional = true
-commit_parsers = [
-    { message = "^feat", group = "🚀 Features" },
-    { message = "^fix", group = "🐛 Bug Fixes" },
-    { message = "^docs", group = "📝 Documentation" },
-    { message = "^style", group = "🎨 Style" },
-    { message = "^refactor", group = "🔧 Refactoring" },
-    { message = "^perf", group = "⚡ Performance" },
-    { message = "^test", group = "🧪 Testing" },
-    { message = "^chore", group = "⚙️ Miscellaneous Tasks" },
-    { message = "^ci", group = "⚙️ Miscellaneous Tasks" },
-    { message = "^build", group = "⚙️ Miscellaneous Tasks" },
-    { message = "^revert", group = "⏪ Revert" },
-]
+filter_unconventional = false
+tag_pattern = "v[0-9]*"
+sort_commits = "oldest"
+
+# ✅ ONLY ARRAY TABLES — NO [commit_types] ANYWHERE
+
+[[commit_types]]
+message = "^feat"
+group = "Features"
+
+[[commit_types]]
+message = "^fix"
+group = "Bug Fixes"
+
+[[commit_types]]
+message = "^docs"
+group = "Documentation"
+
+[[commit_types]]
+message = "^refactor"
+group = "Refactoring"
+
+[[commit_types]]
+message = "^perf"
+group = "Performance"
+
+[[commit_types]]
+message = "^test"
+group = "Tests"
+
+[[commit_types]]
+message = "^chore"
+group = "Chores"
