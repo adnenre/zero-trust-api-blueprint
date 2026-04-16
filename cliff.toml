@@ -11,15 +11,7 @@ body = """
 trim = true
 footer = ""
 
-# Ajoute le numéro de version en en-tête
-[changelog.header]
-# Personnalisation du titre de version
-# Utilise la variable 'version' passée par git-cliff
-[changelog.header]
-# Remplacé par l'option --latest ou --tag
-
 [git]
-# Conventions de commit (Conventional Commits)
 conventional_commits = true
 filter_unconventional = true
 commit_parsers = [
