@@ -60,13 +60,18 @@ public class AppDbContext : DbContext
             .HasForeignKey(d => d.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // AuditLog – FIXED: ensure foreign key is nullable when using SetNull
-        modelBuilder.Entity<AuditLog>()
-            .HasOne(al => al.User)
-            .WithMany()
-            .HasForeignKey(al => al.UserId)
-            .IsRequired(false)               // <-- Allows NULL when User is deleted
-            .OnDelete(DeleteBehavior.SetNull);
+        // AuditLog – CORRECTION DÉFINITIVE
+        // On suppose que la classe User possède : public ICollection<AuditLog> AuditLogs { get; set; }
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            entity.HasOne(al => al.User)
+                .WithMany(u => u.AuditLogs)   // ← Navigation inverse explicite
+                .HasForeignKey(al => al.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
         // UploadedFile
         modelBuilder.Entity<UploadedFile>()

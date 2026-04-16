@@ -12,7 +12,7 @@ using ZeroTrustAPI.Api.Data;
 namespace ZeroTrustAPI.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260415235435_InitialCreate")]
+    [Migration("20260416004130_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -73,14 +73,9 @@ namespace ZeroTrustAPI.Api.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("UserId1")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1");
 
                     b.ToTable("AuditLogs", (string)null);
                 });
@@ -224,6 +219,12 @@ namespace ZeroTrustAPI.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
@@ -266,13 +267,10 @@ namespace ZeroTrustAPI.Api.Migrations
             modelBuilder.Entity("ZeroTrustAPI.Api.Entities.AuditLog", b =>
                 {
                     b.HasOne("ZeroTrustAPI.Api.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ZeroTrustAPI.Api.Entities.User", null)
                         .WithMany("AuditLogs")
-                        .HasForeignKey("UserId1");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

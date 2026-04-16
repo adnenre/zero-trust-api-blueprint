@@ -31,7 +31,9 @@ namespace ZeroTrustAPI.Api.Migrations
                     Username = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,8 +70,7 @@ namespace ZeroTrustAPI.Api.Migrations
                     Action = table.Column<string>(type: "text", nullable: false),
                     Details = table.Column<string>(type: "text", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IpAddress = table.Column<string>(type: "text", nullable: true),
-                    UserId1 = table.Column<Guid>(type: "uuid", nullable: true)
+                    IpAddress = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -79,12 +80,7 @@ namespace ZeroTrustAPI.Api.Migrations
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
-                    table.ForeignKey(
-                        name: "FK_AuditLogs_Users_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "Users",
-                        principalColumn: "Id");
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -206,11 +202,6 @@ namespace ZeroTrustAPI.Api.Migrations
                 name: "IX_AuditLogs_UserId",
                 table: "AuditLogs",
                 column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AuditLogs_UserId1",
-                table: "AuditLogs",
-                column: "UserId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Devices_UserId",
