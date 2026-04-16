@@ -17,15 +17,12 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install git-cliff
-        run: |
-          curl -sL https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -m)-unknown-linux-musl.tar.gz | tar xz
-          sudo mv git-cliff /usr/local/bin/
-
       - name: Generate changelog with git-cliff
+        uses: orhun/git-cliff-action@v4
         id: cliff
-        run: |
-          git-cliff --latest --strip all --output CHANGELOG.md
+        with:
+          config: cliff.toml
+          args: --latest --strip all --output CHANGELOG.md
 
       - name: Commit and push changelog
         env:
@@ -35,5 +32,4 @@ jobs:
           git config user.email "github-actions[bot]@users.github.com"
           git add CHANGELOG.md
           git commit -m "docs(changelog): update for ${{ github.ref_name }}" -m "[skip ci]" || echo "No changes to commit"
-          # Utilise le PAT pour pousser sur main (évite les restrictions de branche protégée)
           git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git HEAD:main
