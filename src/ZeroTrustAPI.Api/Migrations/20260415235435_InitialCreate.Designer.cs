@@ -12,15 +12,15 @@ using ZeroTrustAPI.Api.Data;
 namespace ZeroTrustAPI.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260414133754_AddRemainingTables")]
-    partial class AddRemainingTables
+    [Migration("20260415235435_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "11.0.0-preview.2.26159.112")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -46,6 +46,8 @@ namespace ZeroTrustAPI.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("ApiKeys", (string)null);
                 });
 
@@ -60,16 +62,25 @@ namespace ZeroTrustAPI.Api.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Details")
-                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IpAddress")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UserId")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("UserId1")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("AuditLogs", (string)null);
                 });
@@ -96,6 +107,8 @@ namespace ZeroTrustAPI.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Devices", (string)null);
                 });
 
@@ -119,6 +132,8 @@ namespace ZeroTrustAPI.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens", (string)null);
                 });
@@ -147,17 +162,21 @@ namespace ZeroTrustAPI.Api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
+                    b.Property<string>("IpAddress")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("RevokedAt")
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastActivity")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Sessions", (string)null);
                 });
@@ -186,6 +205,8 @@ namespace ZeroTrustAPI.Api.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("UploadedByUserId");
 
                     b.ToTable("UploadedFiles", (string)null);
                 });
@@ -231,6 +252,75 @@ namespace ZeroTrustAPI.Api.Migrations
                     b.ToTable("UserRoles", (string)null);
                 });
 
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.ApiKey", b =>
+                {
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.AuditLog", b =>
+                {
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", null)
+                        .WithMany("AuditLogs")
+                        .HasForeignKey("UserId1");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.Device", b =>
+                {
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.Session", b =>
+                {
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.UploadedFile", b =>
+                {
+                    b.HasOne("ZeroTrustAPI.Api.Entities.User", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("UploadedByUser");
+                });
+
             modelBuilder.Entity("ZeroTrustAPI.Api.Entities.UserRole", b =>
                 {
                     b.HasOne("ZeroTrustAPI.Api.Entities.Role", "Role")
@@ -248,6 +338,11 @@ namespace ZeroTrustAPI.Api.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ZeroTrustAPI.Api.Entities.User", b =>
+                {
+                    b.Navigation("AuditLogs");
                 });
 #pragma warning restore 612, 618
         }
