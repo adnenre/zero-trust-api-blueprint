@@ -1,0 +1,43 @@
+name: Close issue on branch merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, develop] # s'exécute quand une PR est fermée sur main/develop
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  close-issue:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true # seulement si fusionnée
+    steps:
+      - name: Get issue number from branch name
+        id: extract
+        run: |
+          BRANCH_NAME="${{ github.event.pull_request.head.ref }}"
+          # Extrait le numéro d'issue si le nom est "issue-123" ou "feature/issue-123"
+          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | grep -oP '(?<=issue-)\d+' || echo "")
+          echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Close issue
+        if: steps.extract.outputs.issue_number != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = parseInt('${{ steps.extract.outputs.issue_number }}');
+            if (isNaN(issueNumber)) return;
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              state: 'closed'
+            });
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `✅ Fermé automatiquement car la branche \`${{ github.event.pull_request.head.ref }}\` a été fusionnée dans \`${{ github.event.pull_request.base.ref }}\`.`
+            });
