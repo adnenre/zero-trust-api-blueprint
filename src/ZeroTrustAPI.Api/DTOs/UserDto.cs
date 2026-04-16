@@ -1,8 +1,15 @@
+using System;
+using System.Collections.Generic;
+
 namespace ZeroTrustAPI.Api.DTOs;
 
 public class UserDto
 {
-    public int Id { get; }
-    public string Username { get; }
-    public UserDto(int id, string username) => (Id, Username) = (id, username);
+    public Guid Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+    public bool IsActive { get; set; }
+    public List<string> Roles { get; set; } = new List<string>();
 }

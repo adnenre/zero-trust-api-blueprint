@@ -6,7 +6,7 @@ ZeroTrustAPI follows a **layered architecture** (also known as N‑tier) with st
 
 ## Layer Overview
 
-```bash
+```text
 [ Controller ]  →  [ Service ]  →  [ Repository ]  →  [ Database ]
       ↑                 ↑                ↑
    (DTOs)           (Mappers)        (Entities)
@@ -24,13 +24,13 @@ ZeroTrustAPI follows a **layered architecture** (also known as N‑tier) with st
 - **Folder:** `Services/Implementations/` + `Services/Interfaces/`
 - **Responsibility:** Implement use cases, enforce business rules, orchestrate repositories and external clients.
 - **Rules:** Depend on abstractions (interfaces) – not concrete repositories. Use mappers to convert entities to DTOs. Never reference `HttpContext` or web‑specific types.
-- **Example:** `AuthService.AuthenticateAsync(string, string)`
+- **Example:** `AuthService.LoginAsync(LoginRequest)`
 
 ### 3. Data Access Layer (Repositories)
 
 - **Folder:** `Repositories/Implementations/` + `Repositories/Interfaces/`
 - **Responsibility:** Abstract database operations (CRUD). Translate between entities and the ORM (Entity Framework Core).
-- **Rules:** Return entities, never DTOs. Hide the underlying database provider (SQL Server, InMemory, etc.).
+- **Rules:** Return entities, never DTOs. Hide the underlying database provider (PostgreSQL, InMemory, etc.).
 - **Example:** `UserRepository.GetByUsernameAsync(string)`
 
 ### 4. Entity Layer (Domain Models)
@@ -64,16 +64,20 @@ ZeroTrustAPI follows a **layered architecture** (also known as N‑tier) with st
 All dependencies are registered in `Program.cs` using `AddScoped<>()` (or `AddSingleton` where appropriate). No `new` operators are used inside classes.
 
 ```csharp
-// Program.cs
+// Program.cs (excerpt)
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
 builder.Services.AddScoped<IHealthService, HealthService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<IApiKeyService, ApiKeyService>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 ```
 
 ### Conditional Database Provider
 
-The environment variable `TESTING` switches between real SQL Server and InMemory database:
+The environment variable `TESTING` switches between real PostgreSQL and InMemory database:
 
 ```csharp
 if (Environment.GetEnvironmentVariable("TESTING") == "true")
@@ -84,7 +88,7 @@ if (Environment.GetEnvironmentVariable("TESTING") == "true")
 else
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 ```
 
@@ -103,14 +107,14 @@ This allows integration tests to run without a real database instance.
 
 ```csharp
 [Fact]
-public async Task AuthenticateAsync_ValidUser_ReturnsSuccess()
+public async Task LoginAsync_ValidUser_ReturnsSuccess()
 {
     // Arrange
     var mockRepo = new Mock<IUserRepository>();
     mockRepo.Setup(r => r.GetByUsernameAsync("john"))
             .ReturnsAsync(new User { ... });
     // Act
-    var result = await service.AuthenticateAsync("john", "pass");
+    var result = await service.LoginAsync(new LoginRequest { ... });
     // Assert
     Assert.True(result.Success);
 }
@@ -135,7 +139,12 @@ var response = await client.PostAsJsonAsync("/api/auth/login", request);
 
 - **Minimum required: 85%** line coverage for handwritten code.
 - Excluded files (generated code, third‑party libraries) are defined in `coverlet.runsettings`.
-- Run locally: `./run-coverage.sh` (from solution root).
+- Run locally:
+
+```bash
+./run-coverage.sh
+```
+
 - CI pipeline fails if coverage is below threshold.
 
 ---
@@ -164,7 +173,7 @@ This ensures that the design is driven by requirements (tests) and remains decou
 - **Password hashing** – BCrypt (adaptive, salt‑included).
 - **Input validation** – performed at controller level (DTO validation) and service level (business rules).
 - **Logging** – structured logs with correlation IDs (planned).
-- **JWT** – planned for next story.
+- **JWT** – implemented (see `Program.cs` and `AuthService`).
 
 ---
 

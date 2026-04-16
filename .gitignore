@@ -56,3 +56,5 @@ desktop.ini
 *.sln.docstates
 *.mds
 tests/ZeroTrustAPI.Tests/obj
+.env
+**/**/appsettings.Development.json
